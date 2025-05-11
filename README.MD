@@ -1,4 +1,4 @@
-[![PHP Version Manager (phpvm)](./assets/Banner.jpg)](https://github.com/Thavarshan/phpvm)
+[![PHP Version Manager (phpvm)](./assets/Banner.png)](https://github.com/Thavarshan/phpvm)
 
 [![Test](https://github.com/Thavarshan/phpvm/actions/workflows/test.yml/badge.svg)](https://github.com/Thavarshan/phpvm/actions/workflows/test.yml)
 [![Use](https://github.com/Thavarshan/phpvm/actions/workflows/use.yml/badge.svg)](https://github.com/Thavarshan/phpvm/actions/workflows/use.yml)
