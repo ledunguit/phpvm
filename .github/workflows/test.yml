@@ -16,18 +16,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install BATS (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          git clone https://github.com/bats-core/bats-core.git
-          cd bats-core
-          sudo ./install.sh /usr/local
+      # Set up permissions for the script
+      - name: Make script executable
+        run: chmod +x ./phpvm.sh
 
-      - name: Install BATS (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install bats-core
-
-      - name: Run BATS tests
-        run: |
-          bats phpvm.bats
+      # Run the integrated self-tests
+      - name: Run integrated tests
+        run: ./phpvm.sh test

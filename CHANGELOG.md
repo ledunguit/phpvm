@@ -1,5 +1,42 @@
 # Release Notes
 
+## [v1.3.0](https://github.com/Thavarshan/phpvm/compare/v1.2.0...v1.3.0) - 2025-05-11
+
+## Added
+
+- Added `system` command to easily switch back to system PHP version
+- Added timestamps to all log messages for better traceability and debugging
+- Added log levels (INFO, ERROR, WARNING, DEBUG) for more structured logging
+- Added `run_with_sudo` helper function to centralize sudo usage logic
+- Added comprehensive self-tests with `phpvm test` command
+- Added test for corrupted `.phpvmrc` file handling
+- Added better support for detecting and using latest PHP version from Homebrew
+- Added improved error messages with more detailed information
+- Added ability to run self-tests with `phpvm test` command
+- Added debugging capability via `DEBUG=true` environment variable
+
+## Changed
+
+- Changed logging format to include timestamps and log levels
+- Changed sudo handling to use a centralized helper function
+- Changed path expansion to use `$HOME` instead of tilde notation for better compatibility
+- Changed error handling to provide more descriptive and actionable messages
+- Changed test framework to be integrated directly into the script
+- Changed help message to include information about the `test` command
+- Improved bash/zsh shell compatibility with better sourcing logic
+- Improved code organization and reduced duplication with helper functions
+
+## Fixed
+
+- Fixed shell crash issue when sourcing in zsh with p10k theme
+- Fixed path expansion issues in Ubuntu bashrc configurations
+- Fixed missing system PHP switching functionality on macOS
+- Fixed detection of latest PHP version on macOS when installed via Homebrew's generic 'php' formula
+- Fixed potential sudo permission issues on Linux by using `run_with_sudo` consistently
+- Fixed auto-switching edge case with invalid or corrupted `.phpvmrc` files
+- Fixed script execution issues when sourced from shell initialization files
+- Fixed various edge cases in version detection and switching
+
 ## [v1.2.0](https://github.com/Thavarshan/phpvm/compare/v1.1.0...v1.2.0) - 2025-02-15
 
 ### Added
