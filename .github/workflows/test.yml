@@ -1,21 +1,29 @@
-name: Test
+name: PHPVM Tests
 
 on:
   push:
     branches:
       - main
+      - development
   pull_request:
+    branches:
+      - main
+      - development
 
 jobs:
   test:
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Install Dependencies
-        run: brew install bats
+      # Set up permissions for the script
+      - name: Make script executable
+        run: chmod +x ./phpvm.sh
 
-      - name: Run PHPVM Tests
-        run: bats test_phpvm.bats
+      # Run the integrated self-tests
+      - name: Run integrated tests
+        run: ./phpvm.sh test

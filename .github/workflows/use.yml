@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - development
   pull_request:
 
 jobs:
@@ -36,5 +37,28 @@ jobs:
           ./phpvm.sh list
 
       - name: Verify PHP Version
+        run: |
+          php -v
+
+      - name: Switch to System PHP
+        run: |
+          ./phpvm.sh system
+
+      - name: Verify System PHP Switch
+        run: |
+          php -v
+
+      - name: Create Project with .phpvmrc
+        run: |
+          mkdir -p test_project
+          echo "8.3" > test_project/.phpvmrc
+          cd test_project
+
+      - name: Test Auto-Switch
+        run: |
+          cd test_project
+          ../phpvm.sh auto
+
+      - name: Verify Auto-Switch
         run: |
           php -v
