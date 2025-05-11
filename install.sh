@@ -63,11 +63,13 @@
         elif [ "$SHELL_NAME" = "bash" ]; then
             if [ -f "$HOME/.bashrc" ]; then
                 DETECTED_PROFILE="$HOME/.bashrc"
+            elif [ -f "$HOME/.bash_profile" ]; then
+                DETECTED_PROFILE="$HOME/.bash_profile"
             fi
         fi
 
         if [ -z "$DETECTED_PROFILE" ]; then
-            for EACH_PROFILE in ".profile" ".bashrc" ".zshrc"; do
+            for EACH_PROFILE in ".profile" ".bashrc" ".bash_profile" ".zshrc"; do
                 if [ -f "$HOME/$EACH_PROFILE" ]; then
                     DETECTED_PROFILE="$HOME/$EACH_PROFILE"
                     break
@@ -100,9 +102,20 @@
         local PROFILE
         PROFILE="$(phpvm_detect_profile)"
 
-        if [ -n "$PROFILE" ] && ! grep -q 'phpvm.sh' "$PROFILE"; then
-            phpvm_echo "Appending phpvm source to $PROFILE"
-            printf "\nexport PHPVM_DIR=\"%s\"\nexport PATH=\"\$PHPVM_DIR/bin:\$PATH\"\n[ -s \"\$PHPVM_DIR/phpvm.sh\" ] && . \"\$PHPVM_DIR/phpvm.sh\"\n" "$(phpvm_install_dir)" >>"$PROFILE"
+        if [ -n "$PROFILE" ]; then
+            phpvm_echo "Adding phpvm to $PROFILE"
+
+            # Check shell type and use appropriate syntax
+            if echo "$PROFILE" | grep -q "zsh"; then
+                # For zsh - use proper if statement to prevent shell crash
+                printf "\nexport PHPVM_DIR=\"%s\"\nexport PATH=\"\$PHPVM_DIR/bin:\$PATH\"\nif [[ -s \"\$PHPVM_DIR/phpvm.sh\" ]]; then\n  source \"\$PHPVM_DIR/phpvm.sh\"\nfi\n" "$(phpvm_install_dir)" >>"$PROFILE"
+            else
+                # For bash and others - use POSIX compatible syntax
+                printf "\nexport PHPVM_DIR=\"%s\"\nexport PATH=\"\$PHPVM_DIR/bin:\$PATH\"\n[ -s \"\$PHPVM_DIR/phpvm.sh\" ] && . \"\$PHPVM_DIR/phpvm.sh\"\n" "$(phpvm_install_dir)" >>"$PROFILE"
+            fi
+        else
+            phpvm_warn "Could not detect profile file. Please manually add the following to your shell profile:"
+            printf "\nexport PHPVM_DIR=\"%s\"\nexport PATH=\"\$PHPVM_DIR/bin:\$PATH\"\n[ -s \"\$PHPVM_DIR/phpvm.sh\" ] && . \"\$PHPVM_DIR/phpvm.sh\"\n" "$(phpvm_install_dir)"
         fi
 
         phpvm_echo "Applying changes..."
@@ -111,11 +124,12 @@
         # Only source the profile if it exists
         if [ -f "$PROFILE" ]; then
             # Use . instead of source for POSIX compatibility
-            . "$PROFILE" || true
+            . "$PROFILE" 2>/dev/null || true
         fi
 
         phpvm_echo "phpvm installation complete!"
-        phpvm_echo "Run: phpvm use 8.4"
+        phpvm_echo "You may need to restart your terminal or run: source $PROFILE"
+        phpvm_echo "Then try: phpvm install 8.2 && phpvm use 8.2"
     }
 
     phpvm_do_install
