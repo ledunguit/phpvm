@@ -772,7 +772,25 @@ uninstall_php() {
 
     # If in test mode, just remove the mock directory
     if [ "${PHPVM_TEST_MODE}" = "true" ]; then
-        rm -rf "${TEST_PREFIX:-/tmp}/opt/homebrew/Cellar/php@$version"
+        case "$PKG_MANAGER" in
+        brew)
+            mock_dir="${TEST_PREFIX:-/tmp}/opt/homebrew/Cellar/php@$version"
+            ;;
+        apt)
+            mock_dir="${TEST_PREFIX:-/tmp}/var/lib/dpkg/info/php$version"
+            ;;
+        dnf | yum)
+            mock_dir="${TEST_PREFIX:-/tmp}/var/lib/rpm/php$version"
+            ;;
+        pacman)
+            mock_dir="${TEST_PREFIX:-/tmp}/var/lib/pacman/local/php$version"
+            ;;
+        *)
+            phpvm_err "Test mode not supported for this package manager."
+            return 1
+            ;;
+        esac
+        rm -rf "$mock_dir"
         phpvm_echo "PHP $version uninstalled."
         return 0
     fi
