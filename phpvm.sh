@@ -802,7 +802,7 @@ uninstall_php() {
                 phpvm_err "Failed to uninstall PHP $version with Homebrew."
                 return 1
             }
-            phpvm_echo "PHP $version uninstalled."
+            :
         else
             phpvm_warn "PHP $version is not installed via Homebrew."
             return 1
