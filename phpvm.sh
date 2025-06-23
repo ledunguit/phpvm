@@ -833,7 +833,7 @@ uninstall_php() {
         fi
         ;;
     pacman)
-        if pacman -Q | grep -q "^php$version"; then
+        if pacman -Qi php"$version" > /dev/null 2>&1; then
             run_with_sudo pacman -R --noconfirm php"$version" || {
                 phpvm_err "Failed to uninstall PHP $version with pacman."
                 return 1
