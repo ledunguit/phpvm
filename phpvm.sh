@@ -809,7 +809,7 @@ uninstall_php() {
         fi
         ;;
     apt)
-        if dpkg -l | grep -q "php$version"; then
+        if dpkg -l | grep -q "^ii\s*php$version\s"; then
             run_with_sudo apt-get remove -y php"$version" || {
                 phpvm_err "Failed to uninstall PHP $version with apt."
                 return 1
