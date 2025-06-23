@@ -5,12 +5,12 @@
 
 # Define a debug mode for testing
 if [ "${BATS_TEST_FILENAME:-}" != "" ]; then
-  # Script is being tested
-  # Don't execute main automatically
-  PHPVM_TEST_MODE=true
-  echo "TEST MODE ACTIVE" >&2
+    # Script is being tested
+    # Don't execute main automatically
+    PHPVM_TEST_MODE=true
+    echo "TEST MODE ACTIVE" >&2
 else
-  PHPVM_TEST_MODE=false
+    PHPVM_TEST_MODE=false
 fi
 
 # Fix to prevent shell crash when sourced
@@ -184,13 +184,13 @@ use_php_version() {
     # Handle test mode specifically
     if [ "${PHPVM_TEST_MODE}" = "true" ]; then
         if [ "$version" = "system" ]; then
-            echo "system" > "$PHPVM_ACTIVE_VERSION_FILE"
+            echo "system" >"$PHPVM_ACTIVE_VERSION_FILE"
             phpvm_echo "Switched to system PHP."
             return 0
         fi
 
         if [ -d "${TEST_PREFIX:-/tmp}/opt/homebrew/Cellar/php@$version" ]; then
-            echo "$version" > "$PHPVM_ACTIVE_VERSION_FILE"
+            echo "$version" >"$PHPVM_ACTIVE_VERSION_FILE"
             phpvm_echo "Switched to PHP $version."
             return 0
         else
@@ -543,7 +543,7 @@ EOF
         output_file=$(mktemp)
 
         # Run the command, redirecting both stdout and stderr to the temporary file
-        "$@" > "$output_file" 2>&1
+        "$@" >"$output_file" 2>&1
 
         # Check if the output contains the expected text
         if grep -q "$expected" "$output_file"; then
@@ -562,7 +562,7 @@ EOF
         local dir="$1"
         shift
 
-        "$@" > /dev/null 2>&1
+        "$@" >/dev/null 2>&1
         if [ -d "$dir" ]; then
             return 0
         else
@@ -580,9 +580,9 @@ EOF
     # Test output functions with timestamps
     test_output_functions() {
         # Check that output contains timestamp format [YYYY-MM-DD HH:MM:SS]
-        assert_output_contains "[INFO]" phpvm_echo "Test message" && \
-        assert_output_contains "[ERROR]" phpvm_err "Test error" && \
-        assert_output_contains "[WARNING]" phpvm_warn "Test warning"
+        assert_output_contains "[INFO]" phpvm_echo "Test message" &&
+            assert_output_contains "[ERROR]" phpvm_err "Test error" &&
+            assert_output_contains "[WARNING]" phpvm_warn "Test warning"
     }
 
     # Test timestamp format in logs
@@ -638,7 +638,7 @@ EOF
 
     # Test install_php
     test_install_php() {
-        install_php "7.4" > /dev/null
+        install_php "7.4" >/dev/null
         local status=$?
 
         # Check for success and file existence
@@ -651,7 +651,7 @@ EOF
         mkdir -p "$TEST_DIR/opt/homebrew/Cellar/php@7.4/bin"
 
         # Test switching
-        use_php_version "7.4" > /dev/null
+        use_php_version "7.4" >/dev/null
         local status=$?
 
         # Check for success and correct active version
@@ -660,7 +660,7 @@ EOF
 
     # Test system_php_version
     test_system_php_version() {
-        system_php_version > /dev/null
+        system_php_version >/dev/null
         local status=$?
 
         # Check for success and correct active version
@@ -674,13 +674,13 @@ EOF
 
         # Create a project with .phpvmrc
         mkdir -p "$HOME/project"
-        echo "7.4" > "$HOME/project/.phpvmrc"
+        echo "7.4" >"$HOME/project/.phpvmrc"
 
         # Change to the project directory
         cd "$HOME/project"
 
         # Test auto-switching
-        auto_switch_php_version > /dev/null
+        auto_switch_php_version >/dev/null
         local status=$?
 
         # Check for success and correct active version
@@ -760,6 +760,106 @@ EOF
     fi
 }
 
+# Uninstall a specific PHP version
+uninstall_php() {
+    version="$1"
+    [ -z "$version" ] && {
+        phpvm_err "No PHP version specified for uninstallation."
+        return 1
+    }
+
+    phpvm_echo "Uninstalling PHP $version..."
+
+    # If in test mode, just remove the mock directory
+    if [ "${PHPVM_TEST_MODE}" = "true" ]; then
+        case "$PKG_MANAGER" in
+        brew)
+            mock_dir="${TEST_PREFIX:-/tmp}/opt/homebrew/Cellar/php@$version"
+            ;;
+        apt)
+            mock_dir="${TEST_PREFIX:-/tmp}/var/lib/dpkg/info/php$version"
+            ;;
+        dnf | yum)
+            mock_dir="${TEST_PREFIX:-/tmp}/var/lib/rpm/php$version"
+            ;;
+        pacman)
+            mock_dir="${TEST_PREFIX:-/tmp}/var/lib/pacman/local/php$version"
+            ;;
+        *)
+            phpvm_err "Test mode not supported for this package manager."
+            return 1
+            ;;
+        esac
+        rm -rf "$mock_dir"
+        phpvm_echo "PHP $version uninstalled."
+        return 0
+    fi
+
+    case "$PKG_MANAGER" in
+    brew)
+        if brew list --versions php@"$version" >/dev/null 2>&1; then
+            brew uninstall php@"$version" || {
+                phpvm_err "Failed to uninstall PHP $version with Homebrew."
+                return 1
+            }
+            phpvm_echo "PHP $version uninstalled."
+        else
+            phpvm_warn "PHP $version is not installed via Homebrew."
+            return 1
+        fi
+        ;;
+    apt)
+        if dpkg -l | grep -q "^ii\s*php$version\s"; then
+            run_with_sudo apt-get remove -y php"$version" || {
+                phpvm_err "Failed to uninstall PHP $version with apt."
+                return 1
+            }
+            phpvm_echo "PHP $version uninstalled."
+        else
+            phpvm_warn "PHP $version is not installed via apt."
+            return 1
+        fi
+        ;;
+    dnf | yum)
+        if $PKG_MANAGER list installed | grep -q "^php$version$"; then
+            run_with_sudo $PKG_MANAGER remove -y php"$version" || {
+                phpvm_err "Failed to uninstall PHP $version with $PKG_MANAGER."
+                return 1
+            }
+            phpvm_echo "PHP $version uninstalled."
+        else
+            phpvm_warn "PHP $version is not installed via $PKG_MANAGER."
+            return 1
+        fi
+        ;;
+    pacman)
+        if pacman -Qi php"$version" > /dev/null 2>&1; then
+            run_with_sudo pacman -R --noconfirm php"$version" || {
+                phpvm_err "Failed to uninstall PHP $version with pacman."
+                return 1
+            }
+            phpvm_echo "PHP $version uninstalled."
+        else
+            phpvm_warn "PHP $version is not installed via pacman."
+            return 1
+        fi
+        ;;
+    *)
+        phpvm_err "Uninstall not supported for this package manager."
+        return 1
+        ;;
+    esac
+
+    # Clean up symlink and active version if needed
+    if [ -f "$PHPVM_ACTIVE_VERSION_FILE" ] && [ "$(cat "$PHPVM_ACTIVE_VERSION_FILE")" = "$version" ]; then
+        rm -f "$PHPVM_CURRENT_SYMLINK"
+        rm -f "$PHPVM_ACTIVE_VERSION_FILE"
+        phpvm_warn "Active PHP version was uninstalled. Please select another version."
+    fi
+
+    return 0
+}
+
 # Main function to handle commands
 main() {
     # Only run if not being sourced
@@ -790,6 +890,13 @@ main() {
         fi
         install_php "$@"
         ;;
+    uninstall)
+        if [ "$#" -eq 0 ]; then
+            phpvm_err "Missing PHP version argument for 'uninstall' command."
+            exit 1
+        fi
+        uninstall_php "$@"
+        ;;
     system)
         system_php_version
         ;;
@@ -813,8 +920,46 @@ main() {
     esac
 }
 
-# This allows the script to be sourced without running main
-if [ "$PHPVM_TEST_MODE" != "true" ] && [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    # Script is being executed directly and not in test mode
-    main "$@"
+# Robust execution detection with multiple fallbacks
+phpvm_should_execute_main() {
+    # Layer 1: Explicit override (highest priority)
+    case "${PHPVM_SOURCED:-auto}" in
+    true | 1 | yes) return 1 ;; # Don't execute
+    false | 0 | no) return 0 ;; # Execute
+    esac
+
+    # Layer 2: Test mode
+    [ "$PHPVM_TEST_MODE" = "true" ] && return 1
+
+    # Layer 3: Return test (most reliable POSIX method)
+    if (return 0 2>/dev/null); then
+        return 1 # Sourced
+    else
+        return 0 # Executed
+    fi
+}
+
+# Safe main execution with error handling
+if phpvm_should_execute_main "$@"; then
+    phpvm_debug "Executing main with $# arguments"
+
+    # Verify main function exists
+    if command -v main >/dev/null 2>&1; then
+        main "$@"
+    else
+        phpvm_err "main function not found - script may be corrupted"
+        exit 1
+    fi
+else
+    phpvm_debug "Script sourced for function loading"
+
+    # Set environment for shell integration
+    PHPVM_FUNCTIONS_LOADED=true
+    export PHPVM_FUNCTIONS_LOADED
+
+    # Auto-use .phpvmrc if enabled and present
+    if [ "${PHPVM_AUTO_USE:-true}" = "true" ] && [ -f ".phpvmrc" ]; then
+        command -v auto_switch_php_version >/dev/null 2>&1 &&
+            auto_switch_php_version 2>/dev/null || true
+    fi
 fi
