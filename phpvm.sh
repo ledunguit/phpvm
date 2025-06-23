@@ -821,7 +821,7 @@ uninstall_php() {
         fi
         ;;
     dnf | yum)
-        if $PKG_MANAGER list installed | grep -q "php$version"; then
+        if $PKG_MANAGER list installed | grep -q "^php$version$"; then
             run_with_sudo $PKG_MANAGER remove -y php"$version" || {
                 phpvm_err "Failed to uninstall PHP $version with $PKG_MANAGER."
                 return 1
